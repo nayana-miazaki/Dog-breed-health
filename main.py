@@ -25,6 +25,7 @@ print(df.nunique())
 print('-'*30)
 
 ##Quantidade de dados nulos em cada coluna
+print('Dados nulos em cada coluna:')
 print(df.isnull().sum())
 print('-'*30)
 
@@ -52,22 +53,51 @@ print('-'*30)
 ##Verificar presença de outliers
 for num_col in float_columns:
     print(f'Analisando colunas numéricas: {num_col}')
+    print('-'*30)
 
-plt.figure(figsize=(10,8))
-sns.histplot(df[num_col], kde = True)
-plt.title('Histograma para Identificar Outliers Numéricos')
-plt.xlabel('Valor')
-plt.ylabel('Frequência')
-plt.show()
+# plt.figure(figsize=(10,8))
+# sns.histplot(df[num_col], kde = True)
+# plt.title('Histograma para Identificar Outliers Numéricos')
+# plt.xlabel('Valor')
+# plt.ylabel('Frequência')
+# plt.show()
 
-for notnum_col in object_column:
+for notnum_col in object_columns:
     print(f'Analisando colunas não numéricas: {notnum_col}')
 
-plt.figure(figsize=(10,8))
-sns.histplot(df[notnum_col], kde = True)
-plt.title('Histograma para Identificar Outliers Não Numéricos')
-plt.xlabel('Valor')
-plt.ylabel('Frequência')
-plt.show()
+# plt.figure(figsize=(10,8))
+# sns.histplot(df[notnum_col], kde = True)
+# plt.title('Histograma para Identificar Outliers Não Numéricos')
+# plt.xlabel('Valor')
+# plt.ylabel('Frequência')
+# plt.show()
 
 #Limpeza dos dados:
+##Eliminar as colunas com muitos elementos ausentes
+df_clean = df.drop(columns=['Breed','Spay/Neuter Status','Daily Activity Level','Owner Activity Level'])
+print(df_clean)
+print("-" * 30)
+
+##Quantidade de colunas restantes com elementos ausentes
+print(df_clean.isna().any(axis=1).sum())
+print("-" * 30)
+
+##Preencher valores ausentes com a média nas colunas numéricas
+for num_col in float_columns:
+    columns_mean = df_clean[num_col].mean()
+    df_clean[num_col] = df_clean[num_col].fillna(columns_mean)
+print(df_clean[num_col])
+print('-'*30)
+
+print('Dados nulos em cada coluna:')
+print(df_clean.isnull().sum())
+print('-'*30)
+
+##Preencher valores ausentes com a moda nas colunas não numéricas
+# for obj_col in object_columns:
+#     columns_mode = df_clean[obj_col].mode()
+#     df_clean[obj_col] = df_clean[obj_col].fillna(columns_mode)
+# print(df_clean[obj_col])
+# print('-' * 30)
+
+
