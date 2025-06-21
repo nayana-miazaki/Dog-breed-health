@@ -1,6 +1,3 @@
-from multiprocessing.reduction import duplicate
-from sys import float_repr_style
-
 import numpy as np
 import pandas as pd
 import missingno as mscno
@@ -8,8 +5,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
+from scipy.sparse import hstack
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
@@ -63,22 +60,22 @@ for num_col in float_columns:
     print(f'Analisando colunas numéricas: {num_col}')
     print('-'*30)
 
-# plt.figure(figsize=(10,8))
-# sns.histplot(df[num_col], kde = True)
-# plt.title('Histograma para Identificar Outliers Numéricos')
-# plt.xlabel('Valor')
-# plt.ylabel('Frequência')
-# plt.show()
+plt.figure(figsize=(10,8))
+sns.histplot(df[num_col], kde = True)
+plt.title('Histograma para Identificar Outliers Numéricos')
+plt.xlabel('Valor')
+plt.ylabel('Frequência')
+plt.show()
 
 for notnum_col in object_columns:
     print(f'Analisando colunas não numéricas: {notnum_col}')
 
-# plt.figure(figsize=(10,8))
-# sns.histplot(df[notnum_col], kde = True)
-# plt.title('Histograma para Identificar Outliers Não Numéricos')
-# plt.xlabel('Valor')
-# plt.ylabel('Frequência')
-# plt.show()
+plt.figure(figsize=(10,8))
+sns.histplot(df[notnum_col], kde = True)
+plt.title('Histograma para Identificar Outliers Não Numéricos')
+plt.xlabel('Valor')
+plt.ylabel('Frequência')
+plt.show()
 
 #Limpeza dos dados:
 ##Eliminar as colunas com muitos elementos ausentes e colunas desnecessárias
@@ -129,44 +126,54 @@ y = df_clean['Healthy']
 ##Separar colunas numéricas e não numéricas do X
 x_num = x.select_dtypes(include=np.number).columns.tolist()
 x_obj = x.select_dtypes(exclude=np.number).columns.tolist()
-x_obj_encoded = x[x_obj]
-
-##Trasnformar dados não numéricos em numéricos para a ML compreender
-# le = LabelEncoder()
-# oe = OneHotEncoder()
-# x_encoded = oe.fit_transform(x_obj_encoded)
-# y_encoded = le.fit_transform(y)
-#
-# print(x_encoded)
-# print(y)
-#
-# print("Tipos de dados em x_train antes do escalamento:")
-# print(x_obj_encoded.dtypes)
-# print("Colunas 'object' (strings) em x_train:")
-# print(x_obj_encoded.select_dtypes(include='object').columns.tolist())
-
 
 ##Separar em treinamento e teste
-# SEED = 20
-# x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=SEED, stratify = y)
-# scale = MinMaxScaler()
-# x_train = scale.fit_transform(x_train)
-# x_test = scale.fit_transform(x_test)
-#
-# model = DecisionTreeClassifier()
-# model.fit(x_train, y_train)
-# predict = model.predict(x_test)
-# accuracy = accuracy_score(y_test,predict) * 100
-# print(f'Acurácia da árvore de decisão: {accuracy}')
-#
-# model = SVC()
-# model.fit(x_train, y_train)
-# predict = model.predict(x_test)
-# accuracy = accuracy_score(y_test,predict) * 100
-# print(f'Acurácia do SVM: {accuracy}')
-#
-# model = DummyClassifier()
-# model.fit(x_train, y_train)
-# predict = model.predict(x_test)
-# accuracy = accuracy_score(y_test,predict) * 100
-# print(f'Acurácia do DummyClassifier: {accuracy}')
+SEED = 20
+x_train_raw, x_test_raw, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=SEED, stratify=y)
+
+x_train_num = x_train_raw[x_num]
+x_test_num = x_test_raw[x_num]
+
+x_train_obj = x_train_raw[x_obj]
+x_test_obj = x_test_raw[x_obj]
+
+##Transformar dados não numéricos em numéricos para a ML compreender
+le = LabelEncoder()
+oe = OneHotEncoder(handle_unknown='ignore', sparse_output=True)
+x_train_encoded = oe.fit_transform(x_train_obj)
+x_test_encoded = oe.fit_transform(x_test_obj)
+y_encoded = le.fit_transform(y)
+
+print(x_test_encoded)
+print(x_train_encoded)
+print(y_encoded)
+
+scale = MinMaxScaler()
+x_train_num_scaled = scale.fit_transform(x_train_num)
+x_test_num_scaled = scale.transform(x_test_num)
+
+##Concatenar matrizes esparsas
+x_train = hstack([x_train_num_scaled, x_train_encoded])
+x_test = hstack([x_test_num_scaled, x_test_encoded])
+
+print(f"Shape de x_train final: {x_train.shape}")
+print(f"Shape de x_test final: {x_test.shape}")
+
+model = DecisionTreeClassifier()
+model.fit(x_train, y_train)
+predict = model.predict(x_test)
+accuracy = accuracy_score(y_test,predict) * 100
+print(f'Acurácia da árvore de decisão: {accuracy}')
+
+model = SVC()
+model.fit(x_train, y_train)
+predict = model.predict(x_test)
+accuracy = accuracy_score(y_test,predict) * 100
+print(f'Acurácia do SVM: {accuracy}')
+
+model = DummyClassifier()
+model.fit(x_train, y_train)
+predict = model.predict(x_test)
+accuracy = accuracy_score(y_test,predict) * 100
+print(f'Acurácia do DummyClassifier: {accuracy}')
+
