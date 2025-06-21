@@ -1,5 +1,4 @@
 <h1 align="center"> BEM ESTAR CANINO </h1>
-![Imagem de capa](img/Capa.png)
 
 # Índice 
 * [Descrição do Projeto 💼](#descrição-do-projeto)
